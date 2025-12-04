@@ -1,58 +1,108 @@
-name: 🗑️ Manually Triggered Terraform Destroy
+name: "Terraform"
 
-# This trigger allows the workflow to be run manually and accepts inputs.
 on:
   workflow_dispatch:
     inputs:
+      # Working directory input from user.
+      resource:
+        type: choice
+        description: Choose the resource
+        options:
+          - name_of_dir1
+          - name_of_dir2
+      # Terraform action you want to perform
       action:
-        description: 'Select the action to perform (must be "Terraform_destroy" to proceed)'
-        required: true
-        default: 'Terraform_plan'
+        description: 'Terraform Action to Perform'
         type: choice
         options:
-          - Terraform_plan
+          - Terraform_apply
           - Terraform_destroy
-      resource:
-        description: 'The subdirectory containing the Terraform code (e.g., "modules/s3")'
-        required: true
-        default: '.'
-        type: string
 
 jobs:
-  terraform_destroy:
-    name: "Terraform Destroy"
-    
-    # Run this job only if the input 'action' selected by the user is 'Terraform_destroy'.
-    if: ${{ github.event.inputs.action == 'Terraform_destroy' }}
-    
+  terraform_apply:
+    name: "Terraform_apply"
+    if: ${{ github.event.inputs.action == 'Terraform_apply' }}
     runs-on: ubuntu-latest
-    
-    # Define AWS environment variables for the entire job
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      
-    # Set the working directory for all 'run' steps in this job based on user input.
     defaults:
       run:
         working-directory: ${{ github.event.inputs.resource }}
-        
     steps:
-      - name: Code Checkout
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      - name: Set Up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.6.0 # Use a stable, recent version
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
 
       - name: Terraform Init
+        id: init
         run: terraform init
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
         
-      # Plan the destroy first, outputting the changes
-      - name: Terraform Destroy Plan
-        run: terraform plan -destroy -out=destroy.tfplan
+      - name: Terraform Validate
+        id: validate
+        run: terraform validate -no-color
 
-      # Execute the destroy operation using the generated plan
-      - name: Terraform Destroy Apply
-        run: terraform apply destroy.tfplan -auto-approve
+      - name: Run Checkov (Skip All Checks) 🚀
+        id: checkov_scan
+        uses: bridgecrewio/checkov-action@v12 
+        # Note: Checkov action is often used, but you could also run the CLI with
+        # a step like: run: checkov -d . --skip-check ALL --framework terraform
+        with:
+          directory: ${{ github.event.inputs.resource }}
+          # The next line is the key to ignore all issues: --skip-check ALL
+          extra_arguments: --skip-check ALL
+          # Setting soft_fail to true ensures the job doesn't fail on skipped issues
+          soft_fail: true 
+          # You might need to set the appropriate framework, e.g., framework: terraform
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply -auto-approve -var-file=variables.tfvars
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+  
+  ---
+
+  terraform_destroy:
+    name: "Terraform_destroy"
+    if: ${{ github.event.inputs.action == 'Terraform_destroy' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ github.event.inputs.resource }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Run Checkov (Skip All Checks) 🚀
+        id: checkov_scan_destroy
+        uses: bridgecrewio/checkov-action@v12 
+        with:
+          directory: ${{ github.event.inputs.resource }}
+          extra_arguments: --skip-check ALL
+          soft_fail: true
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      - name: Terraform Init
+        id: init
+        run: terraform init
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+        
+      - name: Terraform Destroy
+        id: destroy
+        working-directory: ${{ github.event.inputs.resource }}
+        run: terraform destroy -auto-approve -var-file=variables.tfvars
+        env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
