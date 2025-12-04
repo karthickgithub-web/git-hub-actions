@@ -73,7 +73,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Run Checkov (Skip All Checks) 🚀
+      - name: Run Checkov (Skip All Checks)
         id: checkov_scan_destroy
         uses: bridgecrewio/checkov-action@v12
         with:
