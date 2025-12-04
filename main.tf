@@ -19,7 +19,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket        = "terraform-backend-jishnuhardik-s3-bucket"
-    key           = "terraform_state"
+    key           = "path/to/my/key"
     region        = "us-east-1"
 
     # New flag to enable S3 native locking
