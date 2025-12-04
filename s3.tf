@@ -1,7 +1,7 @@
 
 # Resource definition for the S3 bucket
 resource "aws_s3_bucket" "example_bucket" {
-  bucket = "my-unique-jishnu-hardik-managed-bucket-12345"
+  bucket = "my-unique-jishnu-hardik-managed-bucket-2025"
 
   # The 'acl' argument is required and defaults to 'private' in the modern resource.
   # Explicitly setting it is good practice.
