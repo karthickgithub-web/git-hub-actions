@@ -54,7 +54,6 @@ jobs:
           extra_arguments: --skip-check ALL
           # Setting soft_fail to true ensures the job doesn't fail on skipped issues
           soft_fail: true 
-          # You might need to set the appropriate framework, e.g., framework: terraform
 
       - name: Terraform Apply
         id: apply
@@ -96,7 +95,6 @@ jobs:
         
       - name: Terraform Destroy
         id: destroy
-        # Removed working-directory from here as it's defined in job defaults
         run: terraform destroy -auto-approve -var-file=variables.tfvars
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
