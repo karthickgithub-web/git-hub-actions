@@ -22,6 +22,8 @@ jobs:
         with:
           directory: . # Assumes your Terraform files are in the root of the repo
           output_format: cli
+          # Hard fail only on HIGH and CRITICAL severity issues
+          args: --hard-fail-on HIGH,CRITICAL
           # You can add a soft-fail option (skip exit code 1 on failures) if desired:
           # soft_fail: true
       # ---------------------------------------------
