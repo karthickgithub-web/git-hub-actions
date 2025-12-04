@@ -18,6 +18,7 @@ provider "aws" {
 # Resource definition for the S3 bucket
 resource "aws_s3_bucket" "example_bucket" {
   bucket = "my-unique-jishnu-jenkins-managed-bucket-12345"
+  force_destroy = true
   
   tags = {
     Name        = "JenkinsManagedBucket"
