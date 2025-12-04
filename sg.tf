@@ -2,7 +2,7 @@
 resource "aws_security_group" "web_sg" {
   name        = "web-server-security-group"
   description = "Allow HTTP and SSH inbound traffic"
-  vpc_id      = vpc-0ffde819dac5b7639
+  vpc_id      = "vpc-0ffde819dac5b7639"
 
   # Ingress Rule for SSH (Port 22)
   ingress {
