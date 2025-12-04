@@ -19,6 +19,8 @@ jobs:
     env:
       AWS_REGION: us-east-1 # Region specified in your backend config
       BUCKET_NAME: my-unique-jishnu-hardik-managed-bucket-2025 # Your target bucket
+      # Optionally define key for state file if needed
+      # STATE_KEY: dev/terraform.tfstate
 
     steps:
       - name: Checkout Code
@@ -30,27 +32,30 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      
-
+          aws-region: ${{ env.AWS_REGION }} # Use env var for consistency
+          
       # --- Terraform Setup ---
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-
-      ---
-      
+        
+      # --- FIX/IMPROVEMENT: Explicitly configure S3 backend during Init ---
+      - name: Initialize Terraform (Load state from S3 backend) 🛠️
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ env.BUCKET_NAME }}" \
+            -backend-config="region=${{ env.AWS_REGION }}"
+            # Add state file key if necessary: -backend-config="key=${{ env.STATE_KEY }}"
+            
       ### 1. Empty the S3 Bucket (Crucial for successful deletion)
-      - name: Empty S3 Bucket contents using AWS CLI
+      - name: Empty S3 Bucket contents using AWS CLI 🗑️
         id: empty_bucket
         # This command recursively removes all objects and object versions in the bucket.
         run: |
           echo "Emptying bucket: ${{ env.BUCKET_NAME }}"
+          # Use --force for non-empty buckets with versioning enabled
           aws s3 rm s3://${{ env.BUCKET_NAME }} --recursive
-        
+          
       ### 2. Run Terraform Destroy
-      - name: Initialize Terraform (Loads state from S3 backend)
-        # Initializes the backend in bucket "dgrup-uploads-demo"
-        run: terraform init
-        
-      - name: Run Terraform Destroy
-        # Destroys all resources tracked in the state, including the empty S3 bucket.
+      - name: Run Terraform Destroy 🔥
+        # Destroys all resources tracked in the state, including the empty S3 bucket itself.
         run: terraform destroy -auto-approve
