@@ -1,35 +1,63 @@
+name: 'Destroy Infrastructure'
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_destroy:
+        description: 'Type "destroy" (all lowercase) to confirm DELETION of the infrastructure'
+        required: true
+        default: 'no'
+
 jobs:
   terraform_destroy:
-    # ... (runs-on, if: condition) ...
+    runs-on: ubuntu-latest
+    
+    # ⚠️ SAFETY CHECK: Only proceed if the input confirmation exactly matches "destroy"
+    if: github.event.inputs.confirm_destroy == 'destroy'
     
     env:
       AWS_REGION: us-east-1
-      BUCKET_NAME: my-unique-jishnu-hardik-managed-bucket-2025 # Your bucket name
-      
-    steps:
-      # ... (Checkout, Configure AWS Credentials, Setup Terraform steps) ...
+      # IMPORTANT: Ensure this is the correct bucket name
+      BUCKET_NAME: my-unique-jishnu-hardik-managed-bucket-2025 
 
-      # --- 1. Initialize Terraform (Load state from S3 backend) ---
-      - name: Initialize Terraform (Load state from S3 backend)
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # --- AWS Setup ---
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }} 
+          
+      # --- Terraform Setup ---
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        
+      # 1. Initialize Terraform (Loads state from the S3 backend)
+      - name: Initialize Terraform 🔎
         run: |
-          # Uses the BUCKET_NAME env variable for the backend configuration
           terraform init \
             -backend-config="bucket=${{ env.BUCKET_NAME }}" \
             -backend-config="region=${{ env.AWS_REGION }}"
             
-      # --- 2. Empty the S3 Bucket (CRITICAL: Removes the state file) ---
+      # 2. Empty the S3 Bucket (Crucial step to remove the state file)
       - name: Empty S3 Bucket contents using AWS CLI 🗑️
         id: empty_bucket
-        # Uses the BUCKET_NAME env variable in the AWS CLI command
+        # This removes all objects, including the terraform.tfstate file.
         run: |
           echo "Emptying bucket: ${{ env.BUCKET_NAME }}"
           aws s3 rm s3://${{ env.BUCKET_NAME }} --recursive
           
-      # --- 3. Run Terraform Destroy (Destroys all resources including the now-empty bucket) ---
+      # 3. Run Terraform Destroy
       - name: Run Terraform Destroy 🔥
+        # Destroys all remaining resources tracked in the state, including the now-empty bucket resource.
         run: terraform destroy -auto-approve
-        
-      # --- 4. Final Cleanup (Ensures the empty bucket is terminated, if Terraform failed to delete it) ---
+
+      # 4. Final Cleanup (A safeguard to ensure the bucket is terminated)
       - name: Force delete the S3 Bucket using AWS CLI 💣
-        # This step is a safeguard to explicitly remove the empty bucket.
+        # If Terraform failed to delete the bucket resource for any reason, this ensures it's gone.
+        # The '--force' option works on empty buckets even with versioning enabled.
         run: aws s3 rb s3://${{ env.BUCKET_NAME }} --force
