@@ -1,6 +1,6 @@
 # Create the Security Group
 resource "aws_security_group" "web_sg" {
-  name        = "web-server-security-group"
+  name        = "web-server-security-group-2025"
   description = "Allow HTTP and SSH inbound traffic"
   vpc_id      = "vpc-0ffde819dac5b7639"
 
