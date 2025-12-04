@@ -31,6 +31,6 @@ resource "aws_security_group" "web_sg" {
   }
 
   tags = {
-    Name = "Web_Security_Group"
+    Name = "Web_Security_Group_2025"
   }
 }
