@@ -8,7 +8,7 @@ resource "aws_s3_bucket" "example_bucket" {
   acl = "private" 
 
   tags = {
-    Name        = "JenkinsManagedBucket"
+    Name        = "newbucket2035"
     Environment = "DevOps"
   }
 }
