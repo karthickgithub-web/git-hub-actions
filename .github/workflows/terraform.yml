@@ -37,9 +37,9 @@ jobs:
         id: init
         run: terraform init
         env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.REGION }}
         
       - name: Terraform Validate
         id: validate
@@ -47,9 +47,7 @@ jobs:
 
       - name: Run Checkov (Skip All Checks) 🚀
         id: checkov_scan
-        uses: bridgecrewio/checkov-action@v12 
-        # Note: Checkov action is often used, but you could also run the CLI with
-        # a step like: run: checkov -d . --skip-check ALL --framework terraform
+        uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ github.event.inputs.resource }}
           # The next line is the key to ignore all issues: --skip-check ALL
@@ -62,12 +60,10 @@ jobs:
         id: apply
         run: terraform apply -auto-approve -var-file=variables.tfvars
         env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.REGION }}
   
-  ---
-
   terraform_destroy:
     name: "Terraform_destroy"
     if: ${{ github.event.inputs.action == 'Terraform_destroy' }}
@@ -81,7 +77,7 @@ jobs:
 
       - name: Run Checkov (Skip All Checks) 🚀
         id: checkov_scan_destroy
-        uses: bridgecrewio/checkov-action@v12 
+        uses: bridgecrewio/checkov-action@v12
         with:
           directory: ${{ github.event.inputs.resource }}
           extra_arguments: --skip-check ALL
@@ -94,15 +90,15 @@ jobs:
         id: init
         run: terraform init
         env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.REGION }}
         
       - name: Terraform Destroy
         id: destroy
-        working-directory: ${{ github.event.inputs.resource }}
+        # Removed working-directory from here as it's defined in job defaults
         run: terraform destroy -auto-approve -var-file=variables.tfvars
         env:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_DEFAULT_REGION: ${{ secrets.REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.REGION }}
