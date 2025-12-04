@@ -15,17 +15,16 @@ jobs:
         with:
           terraform_version: 1.12.2
 
-      # --- NEW STEP: Run Checkov Security Scan ---
+      # --- AMENDED STEP: Run Checkov Security Scan ---
       - name: Run Checkov Scan
         id: checkov_scan
         uses: bridgecrewio/checkov-action@v12 
         with:
-          directory: . # Assumes your Terraform files are in the root of the repo
+          directory: .
           output_format: cli
-          # Hard fail only on HIGH and CRITICAL severity issues
-          args: --soft-fail
-          # You can add a soft-fail option (skip exit code 1 on failures) if desired:
-          # soft_fail: true
+          # Use the dedicated input to ensure the job doesn't fail on findings
+          soft_fail: true 
+          # Removed args: --soft-fail to avoid conflicting parameter usage
       # ---------------------------------------------
         
       - name: Terraform Init, Plan
